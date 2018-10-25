@@ -38,13 +38,13 @@
 			<Item label="Energy save heat" value="11"/>
 			<Help>Thermostat operation mode</Help>
 		</Value>
-		<Value type="list" genre="config" index="2" label="Temperature sensor" value="1">
-			<Item label="F  - Floor mode" value="0"/>
-			<Item label="A  - Room temperature mode" value="1"/>
-			<Item label="AF - Room mode w/floor limitations" value="2"/>
-			<Item label="A2 - Room temperature mode" value="3"/>
+		<Value type="list" genre="config" index="2" label="Sensor mode" value="1">
+			<Item label="F  - Floor sensor" value="0"/>
+			<Item label="A  - Internal room sensor" value="1"/>
+			<Item label="AF - Internal room sensor and floor sensor" value="2"/>
+			<Item label="A2 - External room sensor" value="3"/>
 			<Item label="P  - Power regulator" value="4"/>
-			<Item label="FP - Floor mode with minimum power limitation" value="5"/>
+			<Item label="FP - Floor sensor and power regulator" value="5"/>
 			<Help>Thermostat/sensor mode</Help>
 		</Value>
 		<Value type="list" genre="config" index="3" label="Floor sensor type" value="0">
