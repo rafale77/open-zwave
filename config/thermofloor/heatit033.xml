@@ -71,8 +71,8 @@
 		<Value type="short" index="8" genre="config" label="AHi: Air max limit" min="50" max="400" size="2" value="400">
 			<Help>50-400 (5.0C - 40.0C)</Help>
 		</Value>
-		<Value type="byte" index="9" genre="config" label="PLo: Min temperature in Power Reg Mode" min="0" max="9" size="1" value="0">
-			<Help>0-9. Min temperature in Power Regulator Mode (setting 2. Temperature sensor - P)</Help>
+		<Value type="byte" index="9" genre="config" label="PLo: Min power in FP-mode" min="0" max="9" size="1" value="0">
+			<Help>Min power 0-9 (Floor sensor and power regulator mode)</Help>
 		</Value>
 		<Value type="short" genre="config" instance="1" index="10" label="CO mode setpoint" size="2" min="50" max="400" value="210">
 			<Help>50-400 (5.0C - 40.0C)</Help>
@@ -81,7 +81,7 @@
 			<Help>50-400 (5.0C - 40.0C)</Help>
 		</Value>
 		<Value type="byte" index="12" genre="config" label="P setting" min="0" max="10" size="1" value="2">
-			<Help>0-10</Help>
+			<Help>P-mode 0-10 (Power regulator mode)</Help>
 		</Value>
 		<Value type="short" genre="config" instance="1" index="13" label="COOL setpoint" size="2" min="50" max="400" value="210">
 			<Help>
