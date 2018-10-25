@@ -101,7 +101,7 @@
 		<Value type="list" genre="config" index="17" size="1" label="Temperature display" value="0">
 			<Item label="Display setpoint temperature" value="0"/>
 			<Item label="Display calculated temperature" value="1"/>
-			<Help>Thermostat can show setpoint or calculated room temperature on the display</Help>
+			<Help>Show setpoint or calculated temperature on display(</Help>
 		</Value>
 		<Value type="byte" index="18" genre="config" label="Button brightness - Dimmed state" min="0" max="100" size="1" value="50">
 			<Help>0-100 (0 - 100%)</Help>
