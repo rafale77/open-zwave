@@ -32,6 +32,7 @@
 
 	<CommandClass id="112" name="COMMAND_CLASS_CONFIGURATION">
 		<Value type="list" genre="config" index="1" label="Operation mode" value="1">
+			<Help>Set operation mode</Help>
 			<Item label="Off" value="0"/>
 			<Item label="Heat" value="1"/>
 			<Item label="Cool" value="2"/>
@@ -39,15 +40,16 @@
 			<Help>Thermostat operation mode</Help>
 		</Value>
 		<Value type="list" genre="config" index="2" label="Sensor mode" value="1">
+			<Help>Set sensor mode</Help>
 			<Item label="F - Floor sensor" value="0"/>
 			<Item label="A - Internal room sensor" value="1"/>
 			<Item label="AF - Internal room sensor and floor sensor" value="2"/>
 			<Item label="A2 - External room sensor" value="3"/>
 			<Item label="P - Power regulator" value="4"/>
 			<Item label="FP - Floor sensor and power regulator" value="5"/>
-			<Help>Thermostat mode</Help>
 		</Value>
 		<Value type="list" genre="config" index="3" label="Floor sensor type" value="0">
+			<Help>Floor sensor type (10K NTC Default)</Help>
 			<Item label="10k ntc" value="0"/>
 			<Item label="12k ntc" value="1"/>
 			<Item label="15k ntc" value="2"/>
@@ -72,7 +74,7 @@
 			<Help>50-400 (5.0C - 40.0C)</Help>
 		</Value>
 		<Value type="byte" index="9" genre="config" label="PLo: Min power in FP-mode" min="0" max="9" size="1" value="0">
-			<Help>Min power 0-9 (Floor sensor and power regulator mode)</Help>
+			<Help>Min power 0-9 in FP-mode (Floor sensor and power regulator mode)</Help>
 		</Value>
 		<Value type="short" genre="config" instance="1" index="10" label="CO mode setpoint" size="2" min="50" max="400" value="210">
 			<Help>50-400 (5.0C - 40.0C)</Help>
@@ -81,7 +83,7 @@
 			<Help>50-400 (5.0C - 40.0C)</Help>
 		</Value>
 		<Value type="byte" index="12" genre="config" label="P setting" min="0" max="10" size="1" value="2">
-			<Help>P-mode 0-10 (Power regulator mode)</Help>
+			<Help>Power 0-10 in P-mode (Power regulator mode)</Help>
 		</Value>
 		<Value type="short" genre="config" instance="1" index="13" label="COOL setpoint" size="2" min="50" max="400" value="210">
 			<Help>
@@ -89,16 +91,17 @@
 				50-400 (5.0C - 40.0C)
 			</Help>
 		</Value>
-		<Value type="byte" index="14" genre="config" label="Room sensor calibration" min="0" max="255" size="1" value="0">
-			<Help>-40-40 (-4.0C - 4.0C)</Help>
+		<Value type="byte" index="14" genre="config" label="Room sensor calibration" min="0" max="40" size="1" value="0">
+			<Help>Temperature correction 0 - 4.0C (Default: 0). For positive value 40 = 4.0C. Negative value is not working (Adjust negativ calibration on thermostat)</Help>
 		</Value>
-		<Value type="byte" index="15" genre="config" label="Floor sensor calibration" min="0" max="255" size="1" value="0">
-			<Help>-40-40 (-4.0C - 4.0C)</Help>
+		<Value type="byte" index="15" genre="config" label="Floor sensor calibration" min="0" max="40" size="1" value="0">
+			<Help>Temperature correction 0 - 4.0C (Default: 0). For positive value 40 = 4.0C. Negative value is not working (Adjust negativ calibration on thermostat)</Help>
 		</Value>
-		<Value type="byte" index="16" genre="config" label="External sensor calibration" min="0" max="255" size="1" value="0">
-			<Help>-40-40 (-4.0C - 4.0C)</Help>
+		<Value type="byte" index="16" genre="config" label="External sensor calibration" min="0" max="40" size="1" value="0">
+			<Help>Temperature correction 0 - 4.0C (Default: 0). For positive value 40 = 4.0C. Negative value is not working (Adjust negativ calibration on thermostat)</Help>
 		</Value>
 		<Value type="list" genre="config" index="17" size="1" label="Temperature display" value="0">
+			<Help>Show setpoint or calculated temperature on display(</Help>
 			<Item label="Display setpoint temperature" value="0"/>
 			<Item label="Display calculated temperature" value="1"/>
 			<Help>Show setpoint or calculated temperature on display(</Help>
