@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 //
-//	AssociationCommandConfiguration.cpp
+//	BarrierOperator.cpp
 //
 //	Implementation of the COMMAND_CLASS_BARRIER_OPERATOR
 //
@@ -56,23 +56,23 @@ enum BarrierOperatorState
 	BarrierOperatorState_Closing = 0xFC,
 	BarrierOperatorState_Stopped = 0xFD,
 	BarrierOperatorState_Opening = 0xFE,
-	BarrierOperatorState_Open = 0xFF,
+	BarrierOperatorState_Open = 0xFF
 };
 
 enum BarrierOperator_SignalAttributesMask
 {
     BarrierOperatorSignalMask_Audible      = 0x01,
     BarrierOperatorSignalMask_Visual       = 0x02,
-	BarrierOperatorSignalMask_All		   = 0x03
+    BarrierOperatorSignalMask_All	   = 0x03
 };
 
 enum BarrierOperatorCmd_Indexes
 {
-    BarrierOperatorCmd_Index             	= 0x00,
-    BarrierOperatorLabel_Index           	= 0x01,
-    BarrierOperatorSupportedSignals_Index   = 0x02,
-    BarrierOperatorAudible_Index        	= 0x03,
-    BarrierOperatorVisual_Index          	= 0x04,
+    BarrierOperatorCmd_Index               = 0x00,
+    BarrierOperatorLabel_Index             = 0x01,
+    BarrierOperatorSupportedSignals_Index  = 0x02,
+    BarrierOperatorAudible_Index           = 0x03,
+    BarrierOperatorVisual_Index            = 0x04
 };
 
 static char const* c_BarrierOperator_States[] =
