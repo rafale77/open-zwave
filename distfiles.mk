@@ -86,6 +86,7 @@ DISTFILES =	.gitignore \
 	config/aeotec/zw139.xml \
 	config/aeotec/zw140.xml \
 	config/aeotec/zw141.xml \
+	config/aeotec/zw162.xml \
 	config/aeotec/zwa001.xml \
 	config/aeotec/zwa002.xml \
 	config/aeotec/zwa003.xml \
@@ -210,6 +211,7 @@ DISTFILES =	.gitignore \
 	config/fibaro/fgmszw5.xml \
 	config/fibaro/fgpb101.xml \
 	config/fibaro/fgr221.xml \
+	config/fibaro/fgr223.xml \
 	config/fibaro/fgrgbwm441.xml \
 	config/fibaro/fgrm222.xml \
 	config/fibaro/fgs211.xml \
@@ -305,6 +307,7 @@ DISTFILES =	.gitignore \
 	config/horstmann/ssr302.xml \
 	config/horstmann/ssr303.xml \
 	config/idlock/idlock101.xml \
+	config/idlock/idlock150.xml \
 	config/ingersoll/dwzwave1.xml \
 	config/inovelli/nzw1201.xml \
 	config/inovelli/nzw30.xml \
@@ -383,6 +386,7 @@ DISTFILES =	.gitignore \
 	config/philio/pse02.xml \
 	config/philio/psm02.xml \
 	config/philio/psp05.xml \
+	config/philio/psr03-1b.xml \
 	config/philio/psr04.xml \
 	config/philio/pst02-1c.xml \
 	config/philio/pst02-b.xml \
@@ -457,9 +461,12 @@ DISTFILES =	.gitignore \
 	config/shenzen_neo/nas-ab01z.xml \
 	config/shenzen_neo/nas-ds01z.xml \
 	config/shenzen_neo/nas-pd01z.xml \
+	config/shenzen_neo/nas-pd02z.xml \
 	config/shenzen_neo/nas-rc01z.xml \
 	config/shenzen_neo/nas-wr01z.xml \
 	config/shenzen_neo/nas-ws02z.xml \
+	config/simon/10002034-13X.xml \
+	config/simon/10002041-13X.xml \
 	config/steinel/is140-2.xml \
 	config/steinel/l810-led-ihf.xml \
 	config/steinel/rs-led-d2.xml \
@@ -497,6 +504,7 @@ DISTFILES =	.gitignore \
 	config/wenzhou/tsp01.xml \
 	config/wenzhou/tz55.xml \
 	config/wenzhou/tz56.xml \
+	config/wenzhou/tz56s.xml \
 	config/wenzhou/tz57.xml \
 	config/wenzhou/tz65d.xml \
 	config/wenzhou/tz66d.xml \
