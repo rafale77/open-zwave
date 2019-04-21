@@ -148,7 +148,6 @@ m_basic( 0 ),
 m_generic( 0 ),
 m_specific( 0 ),
 m_type( "" ),
-m_numRouteNodes( 0 ),
 m_addingNode( false ),
 m_manufacturerName( "" ),
 m_productName( "" ),
@@ -179,11 +178,25 @@ m_averageResponseRTT( 0 ),
 m_quality( 0 ),
 m_lastReceivedMessage(),
 m_errors( 0 ),
+m_txStatusReportSupported ( false ),
+m_txTime( 0 ),
+m_hops( 0 ),
+m_ackChannel( 0 ),
+m_lastTxChannel( 0 ),
+m_routeScheme( (TXSTATUS_ROUTING_SCHEME)0 ),
+m_routeUsed { },
+m_routeSpeed( (TXSTATUS_ROUTE_SPEED)0 ),
+m_routeTries( 0 ),
+m_lastFailedLinkFrom( 0 ),
+m_lastFailedLinkTo( 0 ),
 m_lastnonce ( 0 )
 {
 	memset( m_neighbors, 0, sizeof(m_neighbors) );
-	memset( m_routeNodes, 0, sizeof(m_routeNodes) );
 	memset( m_nonces, 0, sizeof(m_nonces) );
+	memset( m_rssi_1, 0, sizeof(m_rssi_1) );
+	memset( m_rssi_2, 0, sizeof(m_rssi_2) );
+	memset( m_rssi_3, 0, sizeof(m_rssi_3) );
+	memset( m_rssi_4, 0, sizeof(m_rssi_4) );
 	/* Add NoOp Class */
 	AddCommandClass( NoOperation::StaticGetCommandClassId() );
 
@@ -516,7 +529,7 @@ void Node::AdvanceQueries
 						{
 						        // set the Version to 1 
 						        cc->SetVersion( 1 );
-                                                }
+                        }
 					}
 					addQSC = m_queryPending;
 				}
@@ -1600,13 +1613,13 @@ void Node::SetSecured(bool secure) {
 void Node::SetSecuredClasses
 (
 		uint8 const* _data,
-		uint8 const _length
+		uint8 const _length,
+		uint32 const _instance
 )
 {
 	uint32 i;
 	m_secured = true;
-	Log::Write( LogLevel_Info, m_nodeId, "  Secured command classes for node %d:", m_nodeId );
-
+	Log::Write( LogLevel_Info, m_nodeId, "  Secured command classes for node %d (instance %d):", m_nodeId, _instance );
 	if (!GetDriver()->isNetworkKeySet()) {
 		Log::Write (LogLevel_Warning, m_nodeId, "  Secured Command Classes cannot be enabled as Network Key is not set");
 		return;
@@ -1628,7 +1641,7 @@ void Node::SetSecuredClasses
 		/* Check if this is a CC that is already registered with the node */
 		if (CommandClass *pCommandClass = GetCommandClass(_data[i], afterMark))
 		{
-			/* if it was specified int he NIF frame, and came in as part of the Security SupportedReport message
+			/* if it was specified the he NIF frame, and came in as part of the Security SupportedReport message
 			 * then it can support both Clear Text and Secured Comms. So do a check first
 			 */
 			if (pCommandClass->IsInNIF()) {
@@ -1643,6 +1656,15 @@ void Node::SetSecuredClasses
 					pCommandClass->SetSecured();
 					Log::Write( LogLevel_Info, m_nodeId, "    %s (Secured) - %s", pCommandClass->GetCommandClassName().c_str(), pCommandClass->IsInNIF() ? "InNIF": "NotInNIF");
 				}
+			}
+			if (_instance > 1) {
+				/* we need to get the endpoint from the Security CC, to map over to the target CC if this
+				 * is triggered by a SecurityCmd_SupportedReport from a instance
+				 */
+				CommandClass *secc = GetCommandClass(Security::StaticGetCommandClassId(), false);
+				int ep = secc->GetEndPoint(_instance);
+				pCommandClass->SetEndPoint(_instance, ep);
+				pCommandClass->SetInstance(_instance);
 			}
 		}
 		/* it might be a new CC we havn't seen as part of the NIF. In that case
@@ -1664,7 +1686,10 @@ void Node::SetSecuredClasses
 				// Start with an instance count of one.  If the device supports COMMMAND_CLASS_MULTI_INSTANCE
 				// then some command class instance counts will increase once the responses to the RequestState
 				// call at the end of this method have been processed.
-				pCommandClass->SetInstance( 1 );
+				if (_instance > 1)
+					pCommandClass->SetInstance( _instance );
+				else
+					pCommandClass->SetInstance( 1 );
 
 				/* set our Static Request Flags */
 				uint8 request = 0;
@@ -1692,7 +1717,7 @@ void Node::SetSecuredClasses
 			Log::Write( LogLevel_Info, m_nodeId, "    Secure CommandClass 0x%.2x - NOT SUPPORTED", _data[i] );
 		}
 	}
-	Log::Write( LogLevel_Info, m_nodeId, "  UnSecured command classes for node %d:", m_nodeId );
+	Log::Write( LogLevel_Info, m_nodeId, "  UnSecured command classes for node %d (instance %d):", m_nodeId, _instance );
 	for( map<uint8,CommandClass*>::const_iterator it = m_commandClassMap.begin(); it != m_commandClassMap.end(); ++it )
 	{
 		if (!it->second->IsSecured())
@@ -1855,13 +1880,13 @@ void Node::SetStaticRequests
 {
 	uint8 request = 0;
 
-	if( GetCommandClass( MultiInstance::StaticGetCommandClassId() ) )
+	if( GetCommandClass( MultiInstance::StaticGetCommandClassId(), false ) )
 	{
 		// Request instances
 		request |= (uint8)CommandClass::StaticRequest_Instances;
 	}
 
-	if( GetCommandClass( Version::StaticGetCommandClassId() ) )
+	if( GetCommandClass( Version::StaticGetCommandClassId(), false ) )
 	{
 		// Request versions
 		request |= (uint8)CommandClass::StaticRequest_Version;
@@ -1980,6 +2005,25 @@ void Node::ApplicationCommandHandler
 
 			Msg* msg = new Msg( "Replication Command Complete", m_nodeId, REQUEST, FUNC_ID_ZW_REPLICATION_COMMAND_COMPLETE, false );
 			GetDriver()->SendMsg( msg, Driver::MsgQueue_Command );
+		}
+		else if ( _data[5] == MultiInstance::StaticGetCommandClassId() ) {
+			// Devices that support MultiChannelAssociation may send a MultiChannel Encapsulated message if there is a Instance set in the Association Groups
+			// So we will dynamically load the MultiChannel CC if we receive a encapsulated message
+			// We only do this after the QueryStage is Complete as we don't want to Add this CC to the list, and then confusing OZW that
+			// The device supports the MultiChannel CC (eg, the Device might be asleep, we have not got the NIF and it actually does support it versus sending to a MultiChannelAssociation Endpoint
+			if (GetCurrentQueryStage() != QueryStage_Complete) {
+				Log::Write( LogLevel_Info, m_nodeId, "ApplicationCommandHandler - Received a MultiInstance Message, but QueryStage Isn't Complete yet");
+				return;
+			}
+
+			Log::Write (LogLevel_Info, m_nodeId, "ApplicationCommandHandler - Received a MultiInstance Message but MulitInstance CC isn't loaded. Loading it... ");
+			if (CommandClass* pCommandClass = AddCommandClass(MultiInstance::StaticGetCommandClassId(), true)) {
+				pCommandClass->ReceivedCntIncr();
+				if (!pCommandClass->HandleIncomingMsg( &_data[6], _data[4] ) )
+				{
+					Log::Write (LogLevel_Warning, m_nodeId, "CommandClass %s HandleIncommingMsg returned false", pCommandClass->GetCommandClassName().c_str());
+				}
+			}
 		}
 		else
 		{
@@ -2277,7 +2321,7 @@ ValueID Node::CreateValueID
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		ValueID::ValueType const _type
 )
 {
@@ -2293,7 +2337,7 @@ bool Node::CreateValueBitSet
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2326,7 +2370,7 @@ bool Node::CreateValueBool
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2356,7 +2400,7 @@ bool Node::CreateValueButton
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		uint8 const _pollIntensity
 )
@@ -2382,7 +2426,7 @@ bool Node::CreateValueByte
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2412,7 +2456,7 @@ bool Node::CreateValueDecimal
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2442,7 +2486,7 @@ bool Node::CreateValueInt
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2469,28 +2513,27 @@ bool Node::CreateValueInt
 //-----------------------------------------------------------------------------
 bool Node::CreateValueList
 (
-		ValueID::ValueGenre const _genre,
-		uint8 const _commandClassId,
-		uint8 const _instance,
-		uint8 const _valueIndex,
-		string const& _label,
-		string const& _units,
-		bool const _readOnly,
-		bool const _writeOnly,
-		uint8 const _size,
-		vector<ValueList::Item> const& _items,
-		int32 const _default,
-		uint8 const _pollIntensity
+	ValueID::ValueGenre const _genre,
+	uint8 const _commandClassId,
+	uint8 const _instance,
+	uint16 const _valueIndex,
+	string const& _label,
+	string const& _units,
+	bool const _readOnly,
+	bool const _writeOnly,
+	uint8 const _size,
+	vector<ValueList::Item> const& _items,
+	int32 const _default,
+	uint8 const _pollIntensity
 )
 {
-	ValueList* value = new ValueList( m_homeId, m_nodeId, _genre, _commandClassId, _instance, _valueIndex, _label, _units, _readOnly, _writeOnly, _items, _default, _pollIntensity, _size );
+	ValueList* value = new ValueList(m_homeId, m_nodeId, _genre, _commandClassId, _instance, _valueIndex, _label, _units, _readOnly, _writeOnly, _items, _default, _pollIntensity, _size);
 	ValueStore* store = GetValueStore();
-	if( store->AddValue( value ) )
+	if (store->AddValue(value))
 	{
 		value->Release();
 		return true;
 	}
-
 	value->Release();
 	return false;
 }
@@ -2504,7 +2547,7 @@ bool Node::CreateValueRaw
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2535,7 +2578,7 @@ bool Node::CreateValueSchedule
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2564,7 +2607,7 @@ bool Node::CreateValueShort
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2594,7 +2637,7 @@ bool Node::CreateValueString
 		ValueID::ValueGenre const _genre,
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex,
+		uint16 const _valueIndex,
 		string const& _label,
 		string const& _units,
 		bool const _readOnly,
@@ -2697,10 +2740,10 @@ void Node::ReadValueFromXML
 		instance = (uint8)intVal;
 	}
 
-	uint8 index = 0;
+	uint16 index = 0;
 	if( TIXML_SUCCESS == _valueElement->QueryIntAttribute( "index", &intVal ) )
 	{
-		index = (uint8)intVal;
+		index = (uint16)intVal;
 	}
 
 	ValueID id = ValueID( m_homeId, m_nodeId, genre, _commandClassId, instance, index, type );
@@ -2751,7 +2794,7 @@ Value* Node::GetValue
 (
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex
+		uint16 const _valueIndex
 )
 {
 	Value* value = NULL;
@@ -2769,7 +2812,7 @@ bool Node::RemoveValue
 (
 		uint8 const _commandClassId,
 		uint8 const _instance,
-		uint8 const _valueIndex
+		uint16 const _valueIndex
 )
 {
 	ValueStore* store = GetValueStore();
@@ -3408,7 +3451,7 @@ void Node::ReadDeviceClasses
 		Log::Write( LogLevel_Info, "Check that the config path provided when creating the Manager points to the correct location." );
 		return;
 	}
-
+	doc.SetUserData((void *)filename.c_str());
 	TiXmlElement const* deviceClassesElement = doc.RootElement();
 
 	// Read the basic and generic device classes
@@ -3478,6 +3521,24 @@ void Node::GetNodeStatistics
 	_data->m_receivedTS = m_receivedTS.GetAsString();
 	_data->m_averageRequestRTT = m_averageRequestRTT;
 	_data->m_averageResponseRTT = m_averageResponseRTT;
+	_data->m_txStatusReportSupported = m_txStatusReportSupported;
+	_data->m_txTime = m_txTime;
+	_data->m_hops = m_hops;
+	strncpy(m_rssi_1, _data->m_rssi_1, sizeof(m_rssi_1) );
+	strncpy(m_rssi_2, _data->m_rssi_2, sizeof(m_rssi_2) );
+	strncpy(m_rssi_3, _data->m_rssi_3, sizeof(m_rssi_3) );
+	strncpy(m_rssi_4, _data->m_rssi_4, sizeof(m_rssi_4) );
+	_data->m_ackChannel = m_ackChannel;
+	_data->m_lastTxChannel = m_lastTxChannel;
+	_data->m_routeScheme = m_routeScheme;
+	_data->m_routeUsed[0] = m_routeUsed[0];
+	_data->m_routeUsed[1] = m_routeUsed[1];
+	_data->m_routeUsed[2] = m_routeUsed[2];
+	_data->m_routeUsed[3] = m_routeUsed[3];
+	_data->m_routeTries = m_routeTries;
+	_data->m_lastFailedLinkFrom = m_lastFailedLinkFrom;
+	_data->m_lastFailedLinkTo = m_lastFailedLinkTo;
+
 	_data->m_quality = m_quality;
 	memcpy( _data->m_lastReceivedMessage, m_lastReceivedMessage, sizeof(m_lastReceivedMessage) );
 	for( map<uint8,CommandClass*>::const_iterator it = m_commandClassMap.begin(); it != m_commandClassMap.end(); ++it )
@@ -3910,7 +3971,6 @@ void Node::ReadMetaDataFromXML(TiXmlElement const* _valueElement) {
 			}
 			ccElement = ccElement->NextSiblingElement();
 		}
-		GetDriver()->WriteConfig();
 }
 //-----------------------------------------------------------------------------
 // <Node::WriteMetaDataXML>

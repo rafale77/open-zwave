@@ -35,6 +35,7 @@ using namespace OpenZWave;
 #include "command_classes/ApplicationStatus.h"
 #include "command_classes/Association.h"
 #include "command_classes/AssociationCommandConfiguration.h"
+#include "command_classes/SimpleAV.h"
 #include "command_classes/BarrierOperator.h"
 #include "command_classes/Basic.h"
 #include "command_classes/BasicWindowCovering.h"
@@ -71,6 +72,7 @@ using namespace OpenZWave;
 #include "command_classes/SensorAlarm.h"
 #include "command_classes/SensorBinary.h"
 #include "command_classes/SensorMultilevel.h"
+#include "command_classes/SoundSwitch.h"
 #include "command_classes/SwitchAll.h"
 #include "command_classes/SwitchBinary.h"
 #include "command_classes/SwitchMultilevel.h"
@@ -202,6 +204,7 @@ void CommandClasses::RegisterCommandClasses
 	cc.Register( ApplicationStatus::StaticGetCommandClassId(), ApplicationStatus::StaticGetCommandClassName(), ApplicationStatus::Create );
 	cc.Register( Association::StaticGetCommandClassId(), Association::StaticGetCommandClassName(), Association::Create );
 	cc.Register( AssociationCommandConfiguration::StaticGetCommandClassId(), AssociationCommandConfiguration::StaticGetCommandClassName(), AssociationCommandConfiguration::Create );
+	cc.Register( SimpleAV::StaticGetCommandClassId(), AssociationCommandConfiguration::StaticGetCommandClassName(), SimpleAV::Create );
 	cc.Register( BarrierOperator::StaticGetCommandClassId(), BarrierOperator::StaticGetCommandClassName(), BarrierOperator::Create);
 	cc.Register( Basic::StaticGetCommandClassId(), Basic::StaticGetCommandClassName(), Basic::Create );
 	cc.Register( BasicWindowCovering::StaticGetCommandClassId(), BasicWindowCovering::StaticGetCommandClassName(), BasicWindowCovering::Create );
@@ -238,6 +241,7 @@ void CommandClasses::RegisterCommandClasses
 	cc.Register( SensorAlarm::StaticGetCommandClassId(), SensorAlarm::StaticGetCommandClassName(), SensorAlarm::Create );
 	cc.Register( SensorBinary::StaticGetCommandClassId(), SensorBinary::StaticGetCommandClassName(), SensorBinary::Create );
 	cc.Register( SensorMultilevel::StaticGetCommandClassId(), SensorMultilevel::StaticGetCommandClassName(), SensorMultilevel::Create );
+	cc.Register( SoundSwitch::StaticGetCommandClassId(), SoundSwitch::StaticGetCommandClassName(), SoundSwitch::Create );
 	cc.Register( SwitchAll::StaticGetCommandClassId(), SwitchAll::StaticGetCommandClassName(), SwitchAll::Create );
 	cc.Register( SwitchBinary::StaticGetCommandClassId(), SwitchBinary::StaticGetCommandClassName(), SwitchBinary::Create );
 	cc.Register( SwitchMultilevel::StaticGetCommandClassId(), SwitchMultilevel::StaticGetCommandClassName(), SwitchMultilevel::Create );

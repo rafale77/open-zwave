@@ -29,15 +29,16 @@
 #define _Alarm_H
 
 #include "command_classes/CommandClass.h"
+#include "TimerThread.h"
 
 namespace OpenZWave
 {
 	class ValueByte;
 
-	/** \brief Implements COMMAND_CLASS_ALARM (0x71), a Z-Wave device command class.
+	/** \brief Implements COMMAND_CLASS_NOTIFICATION (0x71), a Z-Wave device command class.
 	 * \ingroup CommandClass
 	 */
-	class Alarm: public CommandClass
+	class Alarm: public CommandClass, private Timer
 	{
 	public:
 		static CommandClass* Create( uint32 const _homeId, uint8 const _nodeId ){ return new Alarm( _homeId, _nodeId ); }
@@ -46,7 +47,7 @@ namespace OpenZWave
 		/** \brief Get command class ID (1 byte) identifying this command class. */
 		static uint8 const StaticGetCommandClassId(){ return 0x71; }
 		/** \brief Get a string containing the name of this command class. */
-		static string const StaticGetCommandClassName(){ return "COMMAND_CLASS_ALARM"; }
+		static string const StaticGetCommandClassName(){ return "COMMAND_CLASS_NOTIFICATION"; }
 
 		// From CommandClass
 		virtual bool RequestState( uint32 const _requestFlags, uint8 const _instance, Driver::MsgQueue const _queue );
@@ -57,12 +58,21 @@ namespace OpenZWave
 		virtual string const GetCommandClassName()const{ return StaticGetCommandClassName(); }
 		/** \brief Handle a response to a message associated with this command class. (Inherited from CommandClass) */
 		virtual bool HandleMsg( uint8 const* _data, uint32 const _length, uint32 const _instance = 1 );
+		virtual uint8 GetMaxVersion(){ return 8; }
+		virtual bool SetValue( Value const& _value );
 
-		virtual uint8 GetMaxVersion(){ return 3; }
 
 	private:
 		Alarm( uint32 const _homeId, uint8 const _nodeId );
-		multimap<uint8, uint8> m_TempValueIDs;
+		void SetupEvents(uint32 type, uint32 index, vector<ValueList::Item> *_items, uint32 const _instance);
+		void ClearAlarm(uint32 type);
+		void ClearEventParams(uint32 const _instance);
+		bool m_v1Params;
+		std::vector<uint32> m_ParamsSet;
+		uint32 m_ClearTimeout;
+		std::map<uint32, uint32> m_TimersToInstances;
+
+
 	};
 
 } // namespace OpenZWave

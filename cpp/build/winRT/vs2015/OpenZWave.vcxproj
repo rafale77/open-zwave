@@ -76,6 +76,7 @@
     <ClInclude Include="..\..\..\src\command_classes\SensorAlarm.h" />
     <ClInclude Include="..\..\..\src\command_classes\SensorBinary.h" />
     <ClInclude Include="..\..\..\src\command_classes\SensorMultilevel.h" />
+    <ClInclude Include="..\..\..\src\command_classes\SoundSwitch.h" />
     <ClInclude Include="..\..\..\src\command_classes\SwitchAll.h" />
     <ClInclude Include="..\..\..\src\command_classes\SwitchBinary.h" />
     <ClInclude Include="..\..\..\src\command_classes\SwitchMultilevel.h" />
@@ -93,10 +94,12 @@
     <ClInclude Include="..\..\..\src\command_classes\ZWavePlusInfo.h" />
     <ClInclude Include="..\..\..\src\Defs.h" />
     <ClInclude Include="..\..\..\src\DNSThread.h" />
+    <ClInclude Include="..\..\..\src\TimerThread.h" />
     <ClInclude Include="..\..\..\src\Driver.h" />
     <ClInclude Include="..\..\..\src\Group.h" />
     <ClInclude Include="..\..\..\src\Http.h" />
     <ClInclude Include="..\..\..\src\Localization.h" />
+    <ClIncluce Include="..\..\..\src\NotificationCCTypes.h" />
     <ClInclude Include="..\..\..\src\Manager.h" />
     <ClInclude Include="..\..\..\src\ManufacturerSpecificDB.h" />
     <ClInclude Include="..\..\..\src\Msg.h" />
@@ -223,6 +226,7 @@
     <ClCompile Include="..\..\..\src\command_classes\SensorAlarm.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\SensorBinary.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\SensorMultilevel.cpp" />
+    <ClCompile Include="..\..\..\src\command_classes\SoundSwitch.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\SwitchAll.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\SwitchBinary.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\SwitchMultilevel.cpp" />
@@ -239,10 +243,12 @@
     <ClCompile Include="..\..\..\src\command_classes\WakeUp.cpp" />
     <ClCompile Include="..\..\..\src\command_classes\ZWavePlusInfo.cpp" />
     <ClCompile Include="..\..\..\src\DNSThread.cpp" />
+    <ClCompile Include="..\..\..\src\TimerThread.cpp" />
     <ClCompile Include="..\..\..\src\Driver.cpp" />
     <ClCompile Include="..\..\..\src\Group.cpp" />
     <ClCompile Include="..\..\..\src\Http.cpp" />
     <ClCompile Include="..\..\..\src\Localization.cpp" />
+    <ClCompile Include="..\..\..\src\NotificationCCTypes.cpp" />
     <ClCompile Include="..\..\..\src\Manager.cpp" />
     <ClCompile Include="..\..\..\src\ManufacturerSpecificDB.cpp" />
     <ClCompile Include="..\..\..\src\Msg.cpp" />

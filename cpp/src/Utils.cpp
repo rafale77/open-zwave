@@ -156,6 +156,38 @@ string OpenZWave::ozwdirname(string m_path)
 
 
 string OpenZWave::intToString( int x ) {
+#if __cplusplus==201103L || __APPLE__
+	return to_string(x);
+#else
 	return static_cast< std::ostringstream & >( ( std::ostringstream() << std::dec << x ) ).str();
+#endif
 }
 
+const char* OpenZWave::rssi_to_string(uint8 _data) {
+	static char buf[8];
+
+	switch (_data) {
+		case 127: {
+			return "---";
+			break;
+		}
+		case 126: {
+			return "MAX";
+			break;
+		}
+		case 125: {
+			return "MIN";
+			break;
+		}
+		default:
+			if (_data >= 11 && _data <= 124)
+			{
+				snprintf(buf, 5, "%4d", (unsigned int)_data - 256);
+				return buf;
+			}
+			else
+			{
+				return "UNK";
+			}
+	}
+}

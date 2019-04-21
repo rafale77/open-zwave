@@ -34,16 +34,19 @@
 #include "Scene.h"
 #include "ZWSecurity.h"
 #include "DNSThread.h"
+#include "TimerThread.h"
 #include "Http.h"
 #include "ManufacturerSpecificDB.h"
 
 #include "platform/Event.h"
 #include "platform/Mutex.h"
 #include "platform/SerialController.h"
+#ifdef USE_HID
 #ifdef WINRT
 #include "platform/winRT/HidControllerWinRT.h"
 #else
 #include "platform/HidController.h"
+#endif
 #endif
 #include "platform/Thread.h"
 #include "platform/Log.h"
@@ -153,6 +156,8 @@ m_init( false ),
 m_awakeNodesQueried( false ),
 m_allNodesQueried( false ),
 m_notifytransactions( false ),
+m_timer ( new TimerThread( this ) ),
+m_timerThread ( new Thread( "timer" ) ),
 m_controllerInterfaceType( _interface ),
 m_controllerPath( _controllerPath ),
 m_controller( NULL ),
@@ -203,6 +208,7 @@ m_badroutes( 0 ),
 m_noack( 0 ),
 m_netbusy( 0 ),
 m_notidle( 0 ),
+m_txverified( 0 ),
 m_nondelivery( 0 ),
 m_routedbusy( 0 ),
 m_broadcastReadCnt( 0 ),
@@ -233,11 +239,13 @@ m_eventMutex (new Mutex() )
 
 	initNetworkKeys(false);
 
+#ifdef USE_HID
 	if( ControllerInterface_Hid == _interface )
 	{
 		m_controller = new HidController();
 	}
 	else
+#endif
 	{
 		m_controller = new SerialController();
 	}
@@ -301,6 +309,10 @@ Driver::~Driver
 
 	m_driverThread->Stop();
 	m_driverThread->Release();
+
+  m_timerThread->Stop();
+  m_timerThread->Release();
+  delete m_timer;
 
 	m_sendMutex->Release();
 
@@ -389,6 +401,7 @@ void Driver::Start
 	// Start the thread that will handle communications with the Z-Wave network
 	m_driverThread->Start( Driver::DriverThreadEntryPoint, this );
 	m_dnsThread->Start ( DNSThread::DNSThreadEntryPoint, m_dns);
+  m_timerThread->Start( TimerThread::TimerThreadEntryPoint, m_timer );
 }
 
 //-----------------------------------------------------------------------------
@@ -702,7 +715,7 @@ bool Driver::ReadConfig
 	{
 		return false;
 	}
-
+	doc.SetUserData((void *)filename.c_str());
 	TiXmlElement const* driverElement = doc.RootElement();
 
 	// Version
@@ -1032,7 +1045,7 @@ void Driver::SendMsg
 		if( Node* node = GetNode(_msg->GetTargetNodeId()) )
 		{
 			/* if the node Supports the Security Class - check if this message is meant to be encapsulated */
-			if ( node->GetCommandClass(Security::StaticGetCommandClassId() ) )
+			if ( node->GetCommandClass(Security::StaticGetCommandClassId()) )
 			{
 				CommandClass *cc = node->GetCommandClass(_msg->GetSendingCommandClass());
 				if ( (cc) && (cc->IsSecured()) )
@@ -1580,6 +1593,11 @@ bool Driver::HandleErrorResponse
 		m_notidle++;
 		Log::Write( LogLevel_Info, _nodeId, "ERROR: %s failed. Network is busy.", _funcStr );
 	}
+	else if ( _error == TRANSMIT_COMPLETE_VERIFIED )
+	{
+		m_txverified++;
+		Log::Write( LogLevel_Info, _nodeId, "ERROR: %s failed. Transmit Verified.", _funcStr );
+	}
 	if( Node* node = GetNodeUnsafe( _nodeId ) )
 	{
 		if( ++node->m_errors >= 3 )
@@ -1714,7 +1732,9 @@ bool Driver::ReadMsg
 (
 )
 {
-	uint8 buffer[1024] = {0};
+	uint8 buffer[1024];
+
+	memset(buffer, 0, sizeof(uint8)* 1024);
 
 	if( !m_controller->Read( buffer, 1 ) )
 	{
@@ -1796,7 +1816,7 @@ bool Driver::ReadMsg
 			m_readCnt++;
 
 			// Process the received message
-			ProcessMsg( &buffer[2] );
+			ProcessMsg( &buffer[2], length-2 );
 		}
 		else
 		{
@@ -1879,7 +1899,8 @@ bool Driver::ReadMsg
 //-----------------------------------------------------------------------------
 void Driver::ProcessMsg
 (
-		uint8* _data
+		uint8* _data,
+		uint8 _length
 )
 {
 	bool handleCallback = true;
@@ -2044,6 +2065,12 @@ void Driver::ProcessMsg
 		{
 			Log::Write( LogLevel_Detail, "" );
 			HandleGetRandomResponse( _data );
+			break;
+		}
+		case FUNC_ID_SERIAL_API_SETUP:
+		{
+			Log::Write( LogLevel_Detail, "" );
+			HandleSerialAPISetupResponse( _data );
 			break;
 		}
 		case FUNC_ID_ZW_MEMORY_GET_ID:
@@ -2221,6 +2248,25 @@ void Driver::ProcessMsg
 			}
 			break;
 		}
+		/* Ignore these. They are manufacturer proprietary */
+		case FUNC_ID_PROPRIETARY_0:
+		case FUNC_ID_PROPRIETARY_1:
+		case FUNC_ID_PROPRIETARY_2:
+		case FUNC_ID_PROPRIETARY_3:
+		case FUNC_ID_PROPRIETARY_4:
+		case FUNC_ID_PROPRIETARY_5:
+		case FUNC_ID_PROPRIETARY_6:
+		case FUNC_ID_PROPRIETARY_7:
+		case FUNC_ID_PROPRIETARY_8:
+		case FUNC_ID_PROPRIETARY_9:
+		case FUNC_ID_PROPRIETARY_A:
+		case FUNC_ID_PROPRIETARY_B:
+		case FUNC_ID_PROPRIETARY_C:
+		case FUNC_ID_PROPRIETARY_D:
+		case FUNC_ID_PROPRIETARY_E:
+		{
+			break;
+		}
 		default:
 		{
 			Log::Write( LogLevel_Detail, "" );
@@ -2241,7 +2287,7 @@ void Driver::ProcessMsg
 		}
 		case FUNC_ID_ZW_SEND_DATA:
 		{
-			HandleSendDataRequest( _data, false );
+			HandleSendDataRequest( _data, _length, false );
 			break;
 		}
 		case FUNC_ID_ZW_REPLICATION_COMMAND_COMPLETE:
@@ -2255,7 +2301,7 @@ void Driver::ProcessMsg
 		}
 		case FUNC_ID_ZW_REPLICATION_SEND_DATA:
 		{
-			HandleSendDataRequest( _data, true );
+			HandleSendDataRequest( _data, _length, true );
 			break;
 		}
 		case FUNC_ID_ZW_ASSIGN_RETURN_ROUTE:
@@ -2365,6 +2411,25 @@ void Driver::ProcessMsg
 		{
 			Log::Write( LogLevel_Detail, "" );
 			HandleSerialAPIResetRequest( _data );
+			break;
+		}
+		/* Ignore these. They are manufacturer proprietary */
+		case FUNC_ID_PROPRIETARY_0:
+		case FUNC_ID_PROPRIETARY_1:
+		case FUNC_ID_PROPRIETARY_2:
+		case FUNC_ID_PROPRIETARY_3:
+		case FUNC_ID_PROPRIETARY_4:
+		case FUNC_ID_PROPRIETARY_5:
+		case FUNC_ID_PROPRIETARY_6:
+		case FUNC_ID_PROPRIETARY_7:
+		case FUNC_ID_PROPRIETARY_8:
+		case FUNC_ID_PROPRIETARY_9:
+		case FUNC_ID_PROPRIETARY_A:
+		case FUNC_ID_PROPRIETARY_B:
+		case FUNC_ID_PROPRIETARY_C:
+		case FUNC_ID_PROPRIETARY_D:
+		case FUNC_ID_PROPRIETARY_E:
+		{
 			break;
 		}
 		default:
@@ -2486,7 +2551,16 @@ void Driver::HandleGetRandomResponse
 		uint8* _data
 )
 {
-	Log::Write( LogLevel_Info, GetNodeNumber( m_currentMsg ), "Received reply to FUNC_ID_ZW_GET_RANDOM: %s", _data[2] ? "true" : "false" );
+	Log::Write( LogLevel_Info, "Received reply to FUNC_ID_ZW_GET_RANDOM: %s", _data[2] ? "true" : "false" );
+}
+
+void Driver::HandleSerialAPISetupResponse
+(
+		uint8* _data
+)
+{
+	Log::Write( LogLevel_Info, "Received reply to FUNC_ID_SERIAL_API_SETUP");
+
 }
 
 //-----------------------------------------------------------------------------
@@ -2553,13 +2627,24 @@ void Driver::HandleGetSerialAPICapabilitiesResponse
 	{
 		SendMsg( new Msg( "FUNC_ID_ZW_GET_VIRTUAL_NODES", 0xff, REQUEST, FUNC_ID_ZW_GET_VIRTUAL_NODES, false ), MsgQueue_Command);
 	}
-	else if( IsAPICallSupported( FUNC_ID_ZW_GET_RANDOM ) )
+	if( IsAPICallSupported( FUNC_ID_ZW_GET_RANDOM ) )
 
 	{
 		Msg *msg = new Msg( "FUNC_ID_ZW_GET_RANDOM", 0xff, REQUEST, FUNC_ID_ZW_GET_RANDOM, false );
 		msg->Append( 32 );      // 32 bytes
 		SendMsg( msg, MsgQueue_Command );
 	}
+
+	if( IsAPICallSupported( FUNC_ID_SERIAL_API_SETUP ) )
+
+	{
+		Msg *msg = new Msg( "FUNC_ID_SERIAL_API_SETUP", 0xff, REQUEST, FUNC_ID_SERIAL_API_SETUP, false );
+		msg->Append( SERIAL_API_SETUP_CMD_TX_STATUS_REPORT );
+		msg->Append( 1 );
+		SendMsg( msg, MsgQueue_Command );
+	}
+
+
 	SendMsg( new Msg( "FUNC_ID_SERIAL_API_GET_INIT_DATA", 0xff, REQUEST, FUNC_ID_SERIAL_API_GET_INIT_DATA, false ), MsgQueue_Command);
 	if( !IsBridgeController() )
 	{
@@ -3094,6 +3179,7 @@ void Driver::HandleGetRoutingInfoResponse
 void Driver::HandleSendDataRequest
 (
 		uint8* _data,
+		uint8 _length,
 		bool _replication
 )
 {
@@ -3108,7 +3194,7 @@ void Driver::HandleSendDataRequest
 		Node* node = GetNodeUnsafe( nodeId );
 		if( node != NULL )
 		{
-			if( _data[3] != 0 )
+			if( _data[3] != TRANSMIT_COMPLETE_OK )
 			{
 				node->m_sentFailed++;
 			}
@@ -3128,6 +3214,35 @@ void Driver::HandleSendDataRequest
 				}
 				Log::Write(LogLevel_Info, nodeId, "Request RTT %d Average Request RTT %d", node->m_lastRequestRTT, node->m_averageRequestRTT );
 			}
+			/* if the frame has txStatus message, then extract it */
+			if (_length > 7) {
+				node->m_txStatusReportSupported = true;
+				node->m_txTime = _data[5] + (_data[4] << 8);
+				node->m_hops = _data[6];
+				strncpy(node->m_rssi_1, rssi_to_string(_data[7]), sizeof(node->m_rssi_1));
+				strncpy(node->m_rssi_2, rssi_to_string(_data[8]), sizeof(node->m_rssi_2));
+				strncpy(node->m_rssi_3, rssi_to_string(_data[9]), sizeof(node->m_rssi_3));
+				strncpy(node->m_rssi_4, rssi_to_string(_data[10]), sizeof(node->m_rssi_4));
+				node->m_ackChannel = _data[11];
+				node->m_lastTxChannel = _data[12];
+				node->m_routeScheme = (TXSTATUS_ROUTING_SCHEME)_data[13];
+				node->m_routeUsed[0] = _data[14];
+				node->m_routeUsed[1] = _data[15];
+				node->m_routeUsed[2] = _data[16];
+				node->m_routeUsed[3] = _data[17];
+				node->m_routeSpeed = (TXSTATUS_ROUTE_SPEED)_data[18];
+				node->m_routeTries = _data[19];
+				node->m_lastFailedLinkFrom = _data[20];
+				node->m_lastFailedLinkTo = _data[21];
+				Node::NodeData nd;
+				node->GetNodeStatistics(&nd);
+				Log::Write( LogLevel_Detail, nodeId, "Extended TxStatus: Time: %d, Hops: %d, Rssi: %s %s %s %s, ChannelAck: %d, TxChannel: %d, RouteScheme: %s, Route: %d %d %d %d, RouteSpeed: %s, RouteTries: %d, FailedLinkFrom: %d, FailedLinkTo: %d",
+						nd.m_txTime, nd.m_hops, nd.m_rssi_1, nd.m_rssi_2, nd.m_rssi_3, nd.m_rssi_4,
+						nd.m_ackChannel, nd.m_lastTxChannel, Manager::GetNodeRouteScheme(&nd).c_str(), nd.m_routeUsed[0],
+						nd.m_routeUsed[1], nd.m_routeUsed[2], nd.m_routeUsed[3], Manager::GetNodeRouteSpeed(&nd).c_str(),
+						nd.m_routeTries, nd.m_lastFailedLinkFrom, nd.m_lastFailedLinkTo);
+			}
+
 		}
 
 		// We do this here since HandleErrorResponse/MoveMessagesToWakeUpQueue can delete m_currentMsg
@@ -3140,7 +3255,7 @@ void Driver::HandleSendDataRequest
 		}
 
 		// Callback ID matches our expectation
-		if( _data[3] != 0 )
+		if( _data[3] != TRANSMIT_COMPLETE_OK )
 		{
 			if( !HandleErrorResponse( _data[3], nodeId, _replication ? "ZW_REPLICATION_END_DATA" : "ZW_SEND_DATA", !_replication ) )
 			{
@@ -3724,7 +3839,7 @@ void Driver::HandleDeleteReturnRouteRequest
 	{
 		return;
 	}
-	if( _data[3] )
+	if( _data[3] != TRANSMIT_COMPLETE_OK)
 	{
 		// Failed
 		HandleErrorResponse( _data[3], m_currentControllerCommand->m_controllerCommandNode, "ZW_DELETE_RETURN_ROUTE", true );
@@ -3755,7 +3870,7 @@ void Driver::HandleSendNodeInformationRequest
 	{
 		return;
 	}
-	if( _data[3] )
+	if( _data[3] != TRANSMIT_COMPLETE_OK )
 	{
 		// Failed
 		HandleErrorResponse( _data[3], m_currentControllerCommand->m_controllerCommandNode, "ZW_SEND_NODE_INFORMATION" );
@@ -6380,7 +6495,7 @@ void Driver::ReadButtons
 		Log::Write( LogLevel_Debug, "Driver::ReadButtons - zwbutton.xml file not found.");
 		return;
 	}
-
+	doc.SetUserData((void *)filename.c_str());
 	TiXmlElement const* nodesElement = doc.RootElement();
 	str = nodesElement->Value();
 	if( str && strcmp( str, "Nodes" ))
@@ -6606,7 +6721,7 @@ void Driver::HandleSendSlaveNodeInfoRequest
 	{
 		return;
 	}
-	if( _data[3] == 0 )	// finish up
+	if( _data[3] == TRANSMIT_COMPLETE_OK )	// finish up
 	{
 		Log::Write( LogLevel_Info, GetNodeNumber( m_currentMsg ), "SEND_SLAVE_NODE_INFO_COMPLETE OK" );
 		SaveButtons();
@@ -6777,6 +6892,7 @@ void Driver::GetDriverStatistics
 	_data->m_noack = m_noack;
 	_data->m_netbusy = m_netbusy;
 	_data->m_notidle = m_notidle;
+	_data->m_txverified = m_txverified;
 	_data->m_nondelivery = m_nondelivery;
 	_data->m_routedbusy = m_routedbusy;
 	_data->m_broadcastReadCnt = m_broadcastReadCnt;
@@ -7292,6 +7408,7 @@ void Driver::ReloadNode
 	TiXmlDocument doc;
 	if( doc.LoadFile( filename.c_str(), TIXML_ENCODING_UTF8 ) )
 	{
+		doc.SetUserData((void *)filename.c_str());
 		TiXmlElement * driverElement = doc.RootElement();
 
 		TiXmlNode * nodeElement = driverElement->FirstChild();

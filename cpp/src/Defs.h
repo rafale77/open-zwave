@@ -254,6 +254,7 @@ namespace OpenZWave
 #define TRANSMIT_COMPLETE_FAIL							0x02
 #define TRANSMIT_COMPLETE_NOT_IDLE						0x03
 #define TRANSMIT_COMPLETE_NOROUTE 						0x04
+#define TRANSMIT_COMPLETE_VERIFIED						0x05
 
 #define RECEIVE_STATUS_ROUTED_BUSY						0x01
 #define RECEIVE_STATUS_TYPE_BROAD	 					0x04
@@ -265,6 +266,8 @@ namespace OpenZWave
 #define FUNC_ID_SERIAL_API_SET_TIMEOUTS 				0x06
 #define FUNC_ID_SERIAL_API_GET_CAPABILITIES				0x07
 #define FUNC_ID_SERIAL_API_SOFT_RESET					0x08
+
+#define FUNC_ID_SERIAL_API_SETUP						0x0b
 
 #define FUNC_ID_ZW_SEND_NODE_INFORMATION				0x12
 #define FUNC_ID_ZW_SEND_DATA							0x13
@@ -312,6 +315,23 @@ namespace OpenZWave
 #define FUNC_ID_ZW_IS_VIRTUAL_NODE						0xA6	// Virtual node test
 #define FUNC_ID_ZW_SET_PROMISCUOUS_MODE					0xD0	// Set controller into promiscuous mode to listen to all frames
 #define FUNC_ID_PROMISCUOUS_APPLICATION_COMMAND_HANDLER	0xD1
+
+#define FUNC_ID_PROPRIETARY_0                           0xF0
+#define FUNC_ID_PROPRIETARY_1                           0xF1
+#define FUNC_ID_PROPRIETARY_2                           0xF2
+#define FUNC_ID_PROPRIETARY_3                           0xF3
+#define FUNC_ID_PROPRIETARY_4                           0xF4
+#define FUNC_ID_PROPRIETARY_5                           0xF5
+#define FUNC_ID_PROPRIETARY_6                           0xF6
+#define FUNC_ID_PROPRIETARY_7                           0xF7
+#define FUNC_ID_PROPRIETARY_8                           0xF8
+#define FUNC_ID_PROPRIETARY_9                           0xF9
+#define FUNC_ID_PROPRIETARY_A                           0xFA
+#define FUNC_ID_PROPRIETARY_B                           0xFB
+#define FUNC_ID_PROPRIETARY_C                           0xFC
+#define FUNC_ID_PROPRIETARY_D                           0xFD
+#define FUNC_ID_PROPRIETARY_E                           0xFE
+
 
 #define ADD_NODE_ANY									0x01
 #define ADD_NODE_CONTROLLER								0x02
@@ -422,6 +442,33 @@ namespace OpenZWave
 #define ZW_LIB_CONTROLLER_BRIDGE  						0x07
 #define ZW_LIB_DUT                						0x08
 
+/* Serial API Setup Commands */
+#define SERIAL_API_SETUP_CMD_TX_STATUS_REPORT			0x02
+#define SERIAL_API_SETUP_CMD_TX_POWERLEVEL_SET 			0x04
+#define SERIAL_API_SETUP_CMD_TX_POWERLEVEL_GET 			0x08
+#define SERIAL_API_SETUP_CMD_TX_GET_MAX_PAYLOAD_SIZE	0x10
+
+/* RouteScheme Definitions */
+typedef enum TXSTATUS_ROUTING_SCHEME
+{
+  ROUTINGSCHEME_IDLE = 0,
+  ROUTINGSCHEME_DIRECT = 1,
+  ROUTINGSCHEME_CACHED_ROUTE_SR = 2,
+  ROUTINGSCHEME_CACHED_ROUTE = 3,
+  ROUTINGSCHEME_CACHED_ROUTE_NLWR = 4,
+  ROUTINGSCHEME_ROUTE = 5,
+  ROUTINGSCHEME_RESORT_DIRECT = 6,
+  ROUTINGSCHEME_RESORT_EXPLORE = 7
+} TXSTATUS_ROUTING_SCHEME;
+
+/* RouteSpeed Definitions */
+typedef enum TXSTATUS_ROUTE_SPEED
+{
+	ROUTE_SPEED_AUTO = 0,
+	ROUTE_SPEED_9600 = 1,
+	ROUTE_SPEED_40K = 2,
+	ROUTE_SPEED_100K = 3,
+} TXSTATUS_ROUTE_SPEED;
 
 
 #endif // _Defs_H

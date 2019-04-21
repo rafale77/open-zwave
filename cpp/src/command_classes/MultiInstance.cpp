@@ -30,6 +30,7 @@
 #include "command_classes/Basic.h"
 #include "command_classes/MultiInstance.h"
 #include "command_classes/NoOperation.h"
+#include "command_classes/Security.h"
 #include "Defs.h"
 #include "Msg.h"
 #include "Driver.h"
@@ -242,6 +243,17 @@ bool MultiInstance::RequestInstances
 	return res;
 }
 
+bool MultiInstance::HandleIncomingMsg
+(
+		uint8 const* _data,
+		uint32 const _length,
+		uint32 const _instance
+)
+{
+	return HandleMsg(_data, _length, _instance);
+}
+
+
 //-----------------------------------------------------------------------------
 // <MultiInstance::HandleMsg>
 // Handle a message from the Z-Wave network
@@ -349,6 +361,11 @@ void MultiInstance::HandleMultiInstanceEncap
 			Log::Write( LogLevel_Info, GetNodeId(), "Received a MultiInstanceEncap from node %d, instance %d, for Command Class %s", GetNodeId(), instance, pCommandClass->GetCommandClassName().c_str() );
 			pCommandClass->ReceivedCntIncr();
 			pCommandClass->HandleMsg( &_data[3], _length-3, instance );
+		}
+		else
+		{
+			Log::Write( LogLevel_Warning, GetNodeId(), "Received invalid MultiInstanceReport from node %d. Attempting to process as MultiChannel", GetNodeId());
+			HandleMultiChannelEncap( _data, _length );
 		}
 	}
 }
@@ -472,10 +489,11 @@ void MultiInstance::HandleMultiChannelCapabilityReport
 				cc->SetAfterMark();
 				Log::Write( LogLevel_Info, GetNodeId(), "        %s", cc->GetCommandClassName().c_str() );
 			}
-			else
+			else if ( cc ) 
 			{
-				Log::Write( LogLevel_Warning, GetNodeId(), "        %xd (Invalid)", commandClassId);
+				Log::Write( LogLevel_Info, GetNodeId(), "        %s", cc->GetCommandClassName().c_str() );
 			}
+			/* The AddCommandClass will bitch about unsupported CC's so we don't need to duplicate that output */
 		}
 
 		// Create internal library instances for each command class in the list
@@ -522,6 +540,18 @@ void MultiInstance::HandleMultiChannelCapabilityReport
 								basic->SetEndPoint( i, endPoint );
 							}
 						}
+						/* if its the Security CC, on a instance > 1, then this has come from the Security CC found in a MultiInstance Capability Report.
+						 * So we need to Query the endpoint for Secured CC's
+						 */
+						if ((commandClassId == Security::StaticGetCommandClassId()) && (i > 1)) {
+							Log::Write(LogLevel_Info, GetNodeId(), "        Sending Security_Supported_Get to Instance %d", i);
+							Security *seccc = static_cast<Security*>(node->GetCommandClass(Security::StaticGetCommandClassId(), afterMark));
+							/* this will trigger a SecurityCmd_SupportedGet on the _instance of the Device. */
+							if (seccc) {
+								seccc->Init(i);
+							}
+						}
+
 					}
 				}
 				endPoint++;
@@ -685,13 +715,28 @@ void MultiInstance::HandleMultiChannelEncap
 		uint8 commandClassId = _data[3];
 		if( CommandClass* pCommandClass = node->GetCommandClass( commandClassId ) )
 		{
+			/* 4.85.13 - If the Root Device is originating a command to an End Point in another node, the Source End Point MUST be set to 0.
+			 *
+			 */
+			if (endPoint == 0) {
+				Log::Write( LogLevel_Error, GetNodeId(), "MultiChannelEncap with endpoint set to 0 - Send to Root Device");
+				pCommandClass->HandleMsg(&_data[4], _length-4);
+				return;
+			}
+
 			uint8 instance = pCommandClass->GetInstance( endPoint );
+			/* we can never have a 0 Instance */
+			if (instance == 0)
+				instance = 1;
 			Log::Write( LogLevel_Info, GetNodeId(), "Received a MultiChannelEncap from node %d, endpoint %d for Command Class %s", GetNodeId(), endPoint, pCommandClass->GetCommandClassName().c_str() );
 			pCommandClass->HandleMsg( &_data[4], _length-4, instance );
 		}
 		else if (CommandClass* pCommandClass = node->GetCommandClass( commandClassId, true ) )
 		{
 			uint8 instance = pCommandClass->GetInstance( endPoint );
+			/* we can never have a 0 Instance */
+			if (instance == 0)
+				instance = 1;
 			Log::Write( LogLevel_Info, GetNodeId(), "Received a Incoming MultiChannelEncap from node %d, endpoint %d for Command Class %s", GetNodeId(), endPoint, pCommandClass->GetCommandClassName().c_str() );
 			pCommandClass->HandleIncomingMsg( &_data[4], _length-4, instance );
 

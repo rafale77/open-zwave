@@ -53,6 +53,7 @@ namespace OpenZWave
 	class Notification;
 	class DNSThread;
 	struct DNSLookup;
+	class TimerThread;
 	class i_HttpClient;
 	struct HttpDownload;
 	class ManufacturerSpecificDB;
@@ -80,9 +81,11 @@ namespace OpenZWave
 		friend class NoOperation;
 		friend class SceneActivation;
 		friend class WakeUp;
+		friend class ApplicationStatus; /* for Notification messages */
 		friend class Security;
 		friend class Msg;
 		friend class ManufacturerSpecificDB;
+		friend class TimerThread;
 
 	//-----------------------------------------------------------------------------
 	//	Controller Interfaces
@@ -175,6 +178,16 @@ namespace OpenZWave
 		void RequestConfig();							// Get the network configuration from the Z-Wave network
 		bool ReadConfig();								// Read the configuration from a file
 		void WriteConfig();								// Save the configuration to a file
+
+	//-----------------------------------------------------------------------------
+	//	Timer
+	//-----------------------------------------------------------------------------
+	private:
+		TimerThread*    m_timer;					/**< TimerThread Class */
+		Thread*         m_timerThread;    /**< Thread for timer events */
+
+	public:
+		TimerThread*		GetTimer() { return m_timer; }
 
 	//-----------------------------------------------------------------------------
 	//	Controller
@@ -285,10 +298,11 @@ namespace OpenZWave
 	//-----------------------------------------------------------------------------
 	private:
 		bool ReadMsg();
-		void ProcessMsg( uint8* _data );
+		void ProcessMsg( uint8* _data, uint8 _length );
 
 		void HandleGetVersionResponse( uint8* _data );
 		void HandleGetRandomResponse( uint8* _data );
+		void HandleSerialAPISetupResponse( uint8* _data );
 		void HandleGetControllerCapabilitiesResponse( uint8* _data );
 		void HandleGetSerialAPICapabilitiesResponse( uint8* _data );
 		void HandleSerialAPISoftResetResponse( uint8* _data );
@@ -320,7 +334,7 @@ namespace OpenZWave
 		bool HandleNetworkUpdateResponse( uint8* _data );
 		void HandleGetRoutingInfoResponse( uint8* _data );
 
-		void HandleSendDataRequest( uint8* _data, bool _replication );
+		void HandleSendDataRequest( uint8* _data, uint8 _length, bool _replication );
 		void HandleAddNodeToNetworkRequest( uint8* _data );
 		void HandleCreateNewPrimaryRequest( uint8* _data );
 		void HandleControllerChangeRequest( uint8* _data );
@@ -805,13 +819,13 @@ OPENZWAVE_EXPORT_WARNINGS_ON
 			uint32 m_badroutes;			// Number of failed messages due to bad route response
 			uint32 m_noack;				// Number of no ACK returned errors
 			uint32 m_netbusy;			// Number of network busy/failure messages
-			uint32 m_notidle;
+			uint32 m_notidle;			// Number of RF Network Busy messages
+			uint32 m_txverified;		// Number of TX Verified messages
 			uint32 m_nondelivery;		// Number of messages not delivered to network
 			uint32 m_routedbusy;		// Number of messages received with routed busy status
 			uint32 m_broadcastReadCnt;	// Number of broadcasts read
 			uint32 m_broadcastWriteCnt;	// Number of broadcasts sent
 		};
-
 		void LogDriverStatistics();
 
 	private:
@@ -835,6 +849,7 @@ OPENZWAVE_EXPORT_WARNINGS_ON
 		uint32 m_noack;				// Number of no ACK returned errors
 		uint32 m_netbusy;			// Number of network busy/failure messages
 		uint32 m_notidle;			// Number of not idle messages
+		uint32 m_txverified;		// Number of TX Verified messages
 		uint32 m_nondelivery;		// Number of messages not delivered to network
 		uint32 m_routedbusy;		// Number of messages received with routed busy status
 		uint32 m_broadcastReadCnt;	// Number of broadcasts read

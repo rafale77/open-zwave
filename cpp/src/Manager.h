@@ -2103,6 +2103,25 @@ OPENZWAVE_EXPORT_WARNINGS_ON
 		 */
 		bool DeleteButton(uint32 const _homeId, uint8 const _nodeId, uint8 const _buttonid);
 
+		/**
+		*  \brief Send a raw packet to a node.
+		*
+		*  Send a Raw Packet to a Node. No confirmation that the node accepted the packet etc will be available.
+		*  This is for testing only and should not be used for anything production
+		*
+		*  \param _homeId the HomeID of the Z-Wave Network
+		*  \param _nodeId the ID of the Node
+		*  \param _logText Text to Log when sending the packet
+		*  \param _msgType The Type of Message to Send
+		*  \param _sendSecure if we should attempt to encrypt the packet
+		*  \param _content A array of bytes to send
+		*  \param _length the length of the array
+		*/
+		void SendRawData(uint32 const _homeId, uint8 const _nodeId, string const& _logText, uint8 const _msgType, const bool _sendSecure, uint8 const* _content, uint8 const _length);
+
+
+
+
 	/*@}*/
 
 	//-----------------------------------------------------------------------------
@@ -2502,6 +2521,20 @@ OPENZWAVE_EXPORT_WARNINGS_ON
 		 * \param _data Pointer to structure NodeData to return values
 		 */
 		void GetNodeStatistics( uint32 const _homeId, uint8 const _nodeId, Node::NodeData* _data );
+
+		/**
+		 * \brief Get a Human Readable String for the RouteScheme in the Extended TX Status Frame
+		 * \param _data Pointer to the structure Node::NodeData return from GetNodeStatistics
+		 * \return String containing the Route Scheme Used
+		 */
+		static string GetNodeRouteScheme(Node::NodeData *_data);
+
+		/**
+		 * \brief Get Humand Readable String for the RouteSpeed in the Extended TX Status Frame
+		 * \param _data Pointer to the structure Node::NodeData returned from GetNodeStatistics
+		 * \return String containing the Speed
+		 */
+		static string GetNodeRouteSpeed(Node::NodeData *_data);
 
 	/*@}*/
 

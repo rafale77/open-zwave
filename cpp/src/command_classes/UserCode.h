@@ -37,16 +37,20 @@ namespace OpenZWave
 	 */
 	class UserCode: public CommandClass
 	{
-	public:
+	private:
 		enum UserCodeStatus
 		{
 			UserCode_Available		= 0x00,
 			UserCode_Occupied		= 0x01,
 			UserCode_Reserved		= 0x02,
-			UserCode_NotAvailable		= 0xfe,
+			UserCode_NotAvailable	= 0xfe,
 			UserCode_Unset			= 0xff
 		};
-
+		struct UserCodeEntry {
+			UserCodeStatus status;
+			uint8 usercode[10];
+		};
+	public:
 		static CommandClass* Create( uint32 const _homeId, uint8 const _nodeId ){ return new UserCode( _homeId, _nodeId ); }
 		virtual ~UserCode(){}
 
@@ -101,10 +105,11 @@ namespace OpenZWave
 		}
 
 		bool		m_queryAll;				// True while we are requesting all the user codes.
-		uint8		m_currentCode;
-		uint8		m_userCodeCount;
-		uint8		m_userCodesStatus[256];
+		uint16		m_currentCode;
+		uint16		m_userCodeCount;
+		std::map<uint16, UserCodeEntry>	m_userCode;
 		bool		m_refreshUserCodes;
+		bool		m_exposeRawValueID;
 	};
 
 } // namespace OpenZWave

@@ -407,8 +407,9 @@ namespace OpenZWave
 			 * as Secured if they exist, and if they don't, it creates new Command Classes and sets them up as Secured
 			 * @param _data a list of Command Classes that are Secured by the Device
 			 * @param _length the length of the _data string
+			 * @param _instance the instance of the Class thats Secured.
 			 */
-			void SetSecuredClasses( uint8 const* _data, uint8 const _length );
+			void SetSecuredClasses( uint8 const* _data, uint8 const _length, uint32 const _instance = 1);
 			void SetSecured(bool secure);
 		private:
 			/**
@@ -509,24 +510,24 @@ namespace OpenZWave
 			// Values (handled by the command classes)
 			//-----------------------------------------------------------------------------
 		public:
-			ValueID CreateValueID( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, ValueID::ValueType const _type );
+			ValueID CreateValueID( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, ValueID::ValueType const _type );
 
 			Value* GetValue( ValueID const& _id );
-			Value* GetValue( uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex );
-			bool RemoveValue( uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex );
+			Value* GetValue( uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex );
+			bool RemoveValue( uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex );
 
 			// Helpers for creating values
-			bool CreateValueBitSet( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int32 const _default, uint8 const _pollIntensity );
-			bool CreateValueBool( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, bool const _default, uint8 const _pollIntensity );
-			bool CreateValueButton( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, uint8 const _pollIntensity );
-			bool CreateValueByte( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _default, uint8 const _pollIntensity );
-			bool CreateValueDecimal( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, string const& _default, uint8 const _pollIntensity );
-			bool CreateValueInt( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int32 const _default, uint8 const _pollIntensity );
-			bool CreateValueList( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _size, vector<ValueList::Item> const& _items, int32 const _default, uint8 const _pollIntensity );
-			bool CreateValueRaw( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const* _default, uint8 const _length, uint8 const _pollIntensity );
-			bool CreateValueSchedule( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _pollIntensity );
-			bool CreateValueShort( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int16 const _default, uint8 const _pollIntensity );
-			bool CreateValueString( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint8 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, string const& _default, uint8 const _pollIntensity );
+			bool CreateValueBitSet( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int32 const _default, uint8 const _pollIntensity );
+			bool CreateValueBool( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, bool const _default, uint8 const _pollIntensity );
+			bool CreateValueButton( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, uint8 const _pollIntensity );
+			bool CreateValueByte( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _default, uint8 const _pollIntensity );
+			bool CreateValueDecimal( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, string const& _default, uint8 const _pollIntensity );
+			bool CreateValueInt( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int32 const _default, uint8 const _pollIntensity );
+			bool CreateValueList( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _size, vector<ValueList::Item> const& _items, int32 const _default, uint8 const _pollIntensity );
+			bool CreateValueRaw( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const* _default, uint8 const _length, uint8 const _pollIntensity );
+			bool CreateValueSchedule( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, uint8 const _pollIntensity );
+			bool CreateValueShort( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int16 const _default, uint8 const _pollIntensity );
+			bool CreateValueString( ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _valueIndex, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, string const& _default, uint8 const _pollIntensity );
 
 			// helpers for removing values
 			void RemoveValueList( ValueList* _value );
@@ -651,26 +652,57 @@ namespace OpenZWave
 					uint8 m_quality;					// Node quality measure
 					uint8 m_lastReceivedMessage[254];
 					list<CommandClassData> m_ccData;
+					bool m_txStatusReportSupported;
+					uint16 m_txTime;
+					uint8 m_hops;
+					char m_rssi_1[8];
+					char m_rssi_2[8];
+					char m_rssi_3[8];
+					char m_rssi_4[8];
+					uint8 m_ackChannel;
+					uint8 m_lastTxChannel;
+					TXSTATUS_ROUTING_SCHEME m_routeScheme;
+					char m_routeUsed[9];
+					TXSTATUS_ROUTE_SPEED m_routeSpeed;
+					uint8 m_routeTries;
+					uint8 m_lastFailedLinkFrom;
+					uint8 m_lastFailedLinkTo;
 			};
 
 			private:
 			void GetNodeStatistics( NodeData* _data );
 
-			uint32 m_sentCnt;				// Number of messages sent from this node.
+			uint32 m_sentCnt;					// Number of messages sent from this node.
 			uint32 m_sentFailed;				// Number of sent messages failed
-			uint32 m_retries;				// Number of message retries
+			uint32 m_retries;					// Number of message retries
 			uint32 m_receivedCnt;				// Number of messages received from this node.
 			uint32 m_receivedDups;				// Number of duplicated messages received;
-			uint32 m_receivedUnsolicited;			// Number of messages received unsolicited
+			uint32 m_receivedUnsolicited;		// Number of messages received unsolicited
 			uint32 m_lastRequestRTT;			// Last message request RTT
 			uint32 m_lastResponseRTT;			// Last message response RTT
-			TimeStamp m_sentTS;				// Last message sent time
+			TimeStamp m_sentTS;					// Last message sent time
 			TimeStamp m_receivedTS;				// Last message received time
 			uint32 m_averageRequestRTT;			// Average Request round trip time.
-			uint32 m_averageResponseRTT;			// Average Response round trip time.
-			uint8 m_quality;				// Node quality measure
-			uint8 m_lastReceivedMessage[254];		// Place to hold last received message
-			uint8 m_errors;					// Count errors for dead node detection
+			uint32 m_averageResponseRTT;		// Average Response round trip time.
+			uint8 m_quality;					// Node quality measure
+			uint8 m_lastReceivedMessage[254];	// Place to hold last received message
+			uint8 m_errors;
+			bool m_txStatusReportSupported;		// if Extended Status Reports are available
+			uint16 m_txTime;					// Time Taken to Transmit the last frame
+			uint8 m_hops;						// Hops taken in transmitting last frame
+			char m_rssi_1[8];					// RSSI Level of last transmission
+			char m_rssi_2[8];					// RSSI Level of last transmission
+			char m_rssi_3[8];					// RSSI Level of last transmission
+			char m_rssi_4[8];					// RSSI Level of last transmission
+			uint8 m_ackChannel;					// Channel we received the last ACK on
+			uint8 m_lastTxChannel;				// Channel we transmitted the last frame on
+			TXSTATUS_ROUTING_SCHEME m_routeScheme;				// The Scheme used to route the last frame
+			uint8 m_routeUsed[4];				// The Route Taken in the last frame
+			TXSTATUS_ROUTE_SPEED m_routeSpeed;					// Baud Rate of the last frame
+			uint8 m_routeTries;					// The number of attempts to route the last frame
+			uint8 m_lastFailedLinkFrom;			// The last failed link from
+			uint8 m_lastFailedLinkTo;			// The last failed link to
+
 
 			//-----------------------------------------------------------------------------
 			//	Encryption Related

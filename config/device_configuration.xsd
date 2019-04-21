@@ -70,6 +70,14 @@
    <xs:attribute name='override_precision' type='xs:string' use='optional'/>
    <xs:attribute name='scenecount' type='xs:string' use='optional'/>
    <xs:attribute name='typeInterpretation' type='xs:string' use='optional'/>
+   <xs:attribute name='exposeRawUserCodes' use='optional'>
+    <xs:simpleType>
+     <xs:restriction base='xs:string'>
+      <xs:enumeration value='true'/>
+      <xs:enumeration value='false'/>
+     </xs:restriction>
+    </xs:simpleType>
+   </xs:attribute>
    <xs:attribute name='create_vars' use='optional'>
     <xs:simpleType>
      <xs:restriction base='xs:string'>
@@ -135,6 +143,7 @@
      </xs:restriction>
     </xs:simpleType>
    </xs:attribute>
+   <xs:attribute name='delay_no_more_info' type='xs:string' use='optional'/>
    <xs:attribute name='version' type='xs:string' use='optional'/>
    <xs:attribute name='request_flags' type='xs:string' use='optional'/>
    <xs:attribute name='endpoints' type='xs:string' use='optional'/>
@@ -241,6 +250,7 @@
     <xs:element ref='Product:Help' minOccurs='0' maxOccurs='unbounded'/>
     <xs:element ref='Product:Label' minOccurs='0' maxOccurs='unbounded'/>
     <xs:element ref='Product:Item' minOccurs='0' maxOccurs='unbounded'/>
+    <xs:element ref="Product:BitSet" minOccurs='0' maxOccurs='unbounded'/>
    </xs:sequence>
    <xs:attribute name='type' use='required'>
      <xs:simpleType>
@@ -311,25 +321,22 @@
 
  <xs:element name='Help'>
   <xs:complexType mixed='true'>
-    <xs:sequence>
-      <xs:element ref="Product:BitSet" minOccurs='0' maxOccurs='unbounded'/>
-    </xs:sequence>
     <xs:attribute name="lang" type="xs:string" use='optional'/>
   </xs:complexType>
  </xs:element>
 
  <xs:element name='Label'>
   <xs:complexType mixed='true'>
-    <xs:sequence>
-      <xs:element ref="Product:BitSet" minOccurs='0' maxOccurs='unbounded'/>
-    </xs:sequence>
     <xs:attribute name="lang" type="xs:string" use='optional'/>
   </xs:complexType>
  </xs:element>
 
  <xs:element name='BitSet'>
   <xs:complexType mixed='true'>
-   <xs:attribute name='label' type='xs:string' use='required'/>
+   <xs:sequence>
+      <xs:element ref='Product:Label' minOccurs='0' maxOccurs='unbounded'/>
+      <xs:element ref='Product:Help' minOccurs='0' maxOccurs='unbounded'/>
+   </xs:sequence>
    <xs:attribute name='id' type='xs:string' use='required'/>
   </xs:complexType>
  </xs:element>
@@ -339,6 +346,7 @@
   <xs:complexType>
    <xs:attribute name='label' type='xs:string' use='required'/>
    <xs:attribute name='value' type='xs:string' use='required'/>
+   <xs:attribute name='lang' type='xs:string' use='optional'/>
   </xs:complexType>
  </xs:element>
 
